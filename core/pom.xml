@@ -7,13 +7,18 @@
     <parent>
         <groupId>com.jlpka</groupId>
         <artifactId>cjclassifier-parent</artifactId>
-        <version>1.0</version>
+        <version>1.0.1</version>
     </parent>
 
     <artifactId>cjclassifier</artifactId>
     <packaging>jar</packaging>
     <name>CJClassifier</name>
     <description>Chinese/Japanese language classifier library</description>
+    <url>https://github.com/jlpka/cjclassifier</url>
+
+    <properties>
+        <maven.deploy.skip>false</maven.deploy.skip>
+    </properties>
 
     <dependencies>
         <dependency>
