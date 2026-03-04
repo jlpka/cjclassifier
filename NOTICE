@@ -1,0 +1,7 @@
+This product includes statistical information derived from text
+from Wikipedia (https://www.wikipedia.org/),
+which is licensed under Creative Commons Attribution-ShareAlike 3.0.
+
+The released model contains only statistical parameters
+(e.g., word and subword frequency information) and does not
+contain or reproduce Wikipedia text.
