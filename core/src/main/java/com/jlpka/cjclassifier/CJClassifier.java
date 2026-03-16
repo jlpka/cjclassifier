@@ -297,7 +297,7 @@ public class CJClassifier {
           boolean anyHigherThanDefault = false;
           for (int col = 0; col < langMap.length; col++) {
             float val = Float.parseFloat(parts[col + 1]);
-            if (val < this.defaultLogProb) {
+            if (val < this.defaultLogProb || val == 0.0) {
               val = (float) this.defaultLogProb;
             } else {
               anyHigherThanDefault = true;

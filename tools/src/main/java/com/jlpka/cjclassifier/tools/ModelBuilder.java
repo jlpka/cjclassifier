@@ -54,7 +54,7 @@ import javax.xml.stream.*;
  *
  * The first is computing raw stats over each wikipedia dump with the "statscj" command:
  * <pre>
- * export INVOKEBUILDER="java -cp tools/target/cjclassifier-tools-1.0.jar com.jlpka.cjclassifier.tools.ModelBuilder"
+ * export INVOKEBUILDER="java -cp tools/target/cjclassifier-tools-1.0.2.jar com.jlpka.cjclassifier.tools.ModelBuilder"
  * export WIKISRC="../wikipedia/orig"
  * export WIKIDERIVED="../wikipedia/derived"
  *
@@ -566,7 +566,7 @@ public class ModelBuilder {
 
   private static void printUsage() {
     System.err.println(
-        "Usage: java -cp target/cjclassifier-tools-1.0.jar"
+        "Usage: java -cp target/cjclassifier-tools-1.0.2.jar"
             + " com.jlpka.cjclassifier.tools.ModelBuilder <command> [options]");
     System.err.println();
     System.err.println("Commands:");

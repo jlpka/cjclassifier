@@ -5,7 +5,7 @@ A focused, self-contained Java library for distinguishing between **Japanese**,
 
 ## The problem
 
-Chinese characters (Hanzi) and Japanese Kanji share the same Unicode CJ Unified
+Chinese characters and Japanese Kanji share the same Unicode CJ Unified
 Ideograph code space. While Japanese also uses Hiragana and Katakana, short
 texts — or all-Kanji Japanese phrases like 事務所 (office) — give no script-level
 signal to work with. Generic language-detection libraries exist, but they spread
@@ -20,9 +20,14 @@ range, the model stores per-language log-probabilities. At classification time
 the library sums these log-probabilities across the input and picks the language
 with the highest score.
 
-Hiragana and Katakana are treated as strong Japanese signals: if the kana
-fraction of the input exceeds a configurable threshold (default 1%), the text is
-classified as Japanese immediately, without consulting the model.
+The focus here is a model that distinguishes between Japanese Kanji and Traditional/Simplified
+Chinese ideographs, particularly in shorter contexts like headings/titles.
+
+That said, it we see any Japanese Hiragana or Katakana characters, we will treat them as
+strong Japanese signals; after all, it would be reasonable to treat such text as automatically
+Japanese. The one caveat is that we've seen Chinese text with a short embedded Japanese quote -
+and for that reason, we will only treat Hiragana/Katakana as definitively Japanese if it's at least 1% of
+the text (in typical long-form Japanese text, Hiragana is closer to 50% of the characters).
 
 ## Features
 
@@ -39,6 +44,8 @@ classified as Japanese immediately, without consulting the model.
 - **Incremental API**: feed text in chunks via `addText()` and compute the result
   once at the end
 - **Boosts**: optionally bias toward a language when you have a regional hint
+- **Scaledown**: if memory is at a premium, it is possible to scale down the memory
+  footprint to a few MB (cjlogprob param)
 
 ## Quick start
 
@@ -48,7 +55,7 @@ classified as Japanese immediately, without consulting the model.
 <dependency>
     <groupId>com.jlpka</groupId>
     <artifactId>cjclassifier</artifactId>
-    <version>1.0</version>
+    <version>1.0.2</version>
 </dependency>
 ```
 
@@ -138,8 +145,8 @@ mvn clean package
 
 This produces:
 
-- `core/target/cjclassifier-1.0.jar` — the library (≈ 8 MB, includes bundled model)
-- `tools/target/cjclassifier-tools-1.0.jar` — uber-JAR for offline tooling
+- `core/target/cjclassifier-1.0.2.jar` — the library (≈ 8 MB, includes bundled model)
+- `tools/target/cjclassifier-tools-1.0.2.jar` — uber-JAR for offline tooling
 
 To run tests:
 

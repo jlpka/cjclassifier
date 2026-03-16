@@ -31,7 +31,7 @@ import javax.xml.stream.*;
  * CJClassifier, which has its own model.
  *
  * <pre>
- * export INVOKEEVAL="java -cp tools/target/cjclassifier-tools-1.0.jar com.jlpka.cjclassifier.tools.EvalTool"
+ * export INVOKEEVAL="java -cp tools/target/cjclassifier-tools-1.0.2.jar com.jlpka.cjclassifier.tools.EvalTool"
  * export WIKIDIR="../wikidata/orig/"
  * export MODELFILE="../wikidata/derived/cjlogprobs.gz"  # empty is ok
  *
@@ -391,7 +391,6 @@ public class EvalTool {
             "language",
             "duration",
             "byparagraph",
-            "misses",
             "justideographs",
             "infiles",
             "cjminlogprob",
@@ -418,7 +417,7 @@ public class EvalTool {
 
   private static void printUsage() {
     System.err.println(
-        "Usage: java -cp target/cjclassifier-tools-1.0.jar com.jlpka.cjclassifier.tools.EvalTool"
+        "Usage: java -cp target/cjclassifier-tools-1.0.2.jar com.jlpka.cjclassifier.tools.EvalTool"
             + " <command> [options]");
     System.err.println();
     System.err.println("Commands:");
