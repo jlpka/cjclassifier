@@ -62,6 +62,7 @@ public class CJClassifier {
    * value from the file header. Thread-safe: callers may invoke from any thread.
    *
    * @return the cached (or newly-loaded) classifier instance
+   * @throws IOException if the bundled model resource cannot be read
    */
   public static synchronized CJClassifier load() throws IOException {
     return load(0.0);
@@ -71,7 +72,9 @@ public class CJClassifier {
    * Returns a cached CJClassifier loaded from the bundled classpath resource with a custom
    * logProbFloor. If logProbFloor is 0, uses the file's MinLogProb header value. Thread-safe.
    *
+   * @param logProbFloor custom log-probability floor, or 0 to use the file's MinLogProb header
    * @return the cached (or newly-loaded) classifier instance
+   * @throws IOException if the bundled model resource cannot be read
    */
   public static synchronized CJClassifier load(double logProbFloor) throws IOException {
     String cacheKey = "classpath:default:" + logProbFloor;
@@ -93,7 +96,9 @@ public class CJClassifier {
    * Returns a cached CJClassifier for the given path, loading it if necessary. Uses the MinLogProb
    * value from the file header. Thread-safe: callers may invoke from any thread.
    *
+   * @param path filesystem path to the model file (may be gzipped)
    * @return the cached (or newly-loaded) classifier instance
+   * @throws IOException if the model file cannot be read
    */
   public static synchronized CJClassifier load(String path) throws IOException {
     return load(path, 0.0);
@@ -105,7 +110,10 @@ public class CJClassifier {
    * absent). Otherwise the logProbFloor allows restricting to a higher floor than what's in the
    * file.
    *
+   * @param path filesystem path to the model file (may be gzipped)
+   * @param logProbFloor custom log-probability floor, or 0 to use the file's MinLogProb header
    * @return the cached (or newly-loaded) classifier instance
+   * @throws IOException if the model file cannot be read
    */
   public static synchronized CJClassifier load(String path, double logProbFloor)
       throws IOException {
@@ -170,12 +178,16 @@ public class CJClassifier {
    * <p>For context, Hiragana is often ~50% of the characters in a typical Japanese text.
    *
    * <p>This value should rightly be set quite low, we default to 1%.
+   *
+   * @param threshold the kana fraction (0.0 to 1.0) above which text is classified as Japanese
    */
   public void setToleratedKanaThreshold(double threshold) {
     this.toleratedKanaThreshold = threshold;
   }
 
   /**
+   * Returns the current kana fraction threshold.
+   *
    * @return the current kana fraction threshold
    */
   public double getToleratedKanaThreshold() {
@@ -329,6 +341,7 @@ public class CJClassifier {
   /**
    * Detect language, only returning the language, rather than the Results details.
    *
+   * @param text the CJ text to classify
    * @return the detected {@link CJLanguage}, or {@link CJLanguage#UNKNOWN} if undetermined
    */
   public CJLanguage detect(CharSequence text) {
@@ -340,6 +353,8 @@ public class CJClassifier {
   /**
    * Detect language, populating the provided Results object with scoring info.
    *
+   * @param text the CJ text to classify
+   * @param results a {@link Results} instance to populate with per-language scores and the winner
    * @return the detected {@link CJLanguage}, or {@link CJLanguage#UNKNOWN} if undetermined
    */
   public CJLanguage detect(CharSequence text, Results results) {
@@ -354,6 +369,9 @@ public class CJClassifier {
    *
    * <p>When we want the result, we should call computeResult(). The main advantage is allowing
    * incremental computation.
+   *
+   * @param text the CJ text chunk to process
+   * @param scores the {@link Scores} instance to accumulate into
    */
   public void addText(CharSequence text, Scores scores) {
     char prev = 0;
@@ -376,7 +394,14 @@ public class CJClassifier {
     }
   }
 
-  /** {@code char[]}-based variant of {@link #addText(CharSequence, Scores)}. */
+  /**
+   * {@code char[]}-based variant of {@link #addText(CharSequence, Scores)}.
+   *
+   * @param text the character array containing CJ text
+   * @param ofs the starting offset within {@code text}
+   * @param len the number of characters to process
+   * @param scores the {@link Scores} instance to accumulate into
+   */
   public void addText(char[] text, int ofs, int len, Scores scores) {
     char prev = 0;
     boolean prevInRange = false;
@@ -400,6 +425,7 @@ public class CJClassifier {
   /**
    * Sums the underlying scores and computes the language result.
    *
+   * @param results the {@link Results} instance containing accumulated scores
    * @return the detected {@link CJLanguage}, or {@link CJLanguage#UNKNOWN} if undetermined
    */
   public CJLanguage computeResult(Results results) {
@@ -448,9 +474,16 @@ public class CJClassifier {
 
   /** Accumulates per-language scoring data during CJ text processing. */
   public static class Scores {
+    /** Accumulated unigram log-probability sums, indexed by language. */
     public final double[] unigramScores = new double[LANG_COUNT];
+
+    /** Accumulated bigram log-probability sums, indexed by language. */
     public final double[] bigramScores = new double[LANG_COUNT];
+
+    /** Number of unigram model hits per language. */
     public final int[] unigramHitsPerLang = new int[LANG_COUNT];
+
+    /** Number of bigram model hits per language. */
     public final int[] bigramHitsPerLang = new int[LANG_COUNT];
 
     /** Number of kana characters seen. */
@@ -459,6 +492,7 @@ public class CJClassifier {
     /** Number of characters in the main CJ range (0x3400-0x9FFF). */
     public int cjCharCount;
 
+    /** Resets all accumulated scores and character counts to zero. */
     public void clear() {
       Arrays.fill(unigramScores, 0);
       Arrays.fill(bigramScores, 0);
@@ -468,6 +502,11 @@ public class CJClassifier {
       cjCharCount = 0;
     }
 
+    /**
+     * Returns {@code true} if at least one unigram was matched in any language.
+     *
+     * @return whether any unigram hits were recorded
+     */
     public boolean anyHits() {
       return maxVal(unigramHitsPerLang) > 0;
     }
@@ -489,7 +528,10 @@ public class CJClassifier {
 
   /** Detection results, including accumulated {@link Scores} and the computed result. */
   public static class Results {
+    /** The underlying per-language scoring data. */
     public final Scores scores;
+
+    /** Combined (unigram + bigram + boost-adjusted) scores, indexed by language. */
     public final double[] totalScores = new double[LANG_COUNT];
 
     /**
@@ -504,6 +546,7 @@ public class CJClassifier {
      */
     public final double[] boosts = new double[LANG_COUNT];
 
+    /** The winning language after {@link CJClassifier#computeResult(Results)}, or {@code null}. */
     public CJLanguage result;
 
     /** Gap between best and runner-up (0 = dead heat, 1 = no contest). */
@@ -519,6 +562,7 @@ public class CJClassifier {
       this.scores = scores;
     }
 
+    /** Resets all scores, boosts, and the computed result to their initial state. */
     public void clear() {
       scores.clear();
       Arrays.fill(totalScores, 0);
@@ -642,6 +686,7 @@ public class CJClassifier {
   /**
    * Returns the internal array index for the given CJ language.
    *
+   * @param lang the CJ language to look up
    * @return 0 for zh-hans, 1 for zh-hant, 2 for ja, or -1 for unknown/unsupported
    */
   public static int cjLangIndex(CJLanguage lang) {
