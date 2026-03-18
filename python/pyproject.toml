@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cjclassifier"
+version = "1.0.3"
+description = "Classify text as Chinese Simplified, Chinese Traditional, or Japanese using a statistical model."
+readme = "README.md"
+license = "Apache-2.0"
+requires-python = ">=3.8"
+authors = [
+    {name = "Jeremy Lilley", email = "jeremy@jlilley.net"},
+]
+keywords = ["chinese", "japanese", "language-detection", "cjk", "nlp"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Topic :: Text Processing :: Linguistic",
+]
+
+[project.urls]
+Homepage = "https://github.com/jlpka/cjclassifier"
+Repository = "https://github.com/jlpka/cjclassifier"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+cjclassifier = ["cjlogprobs.gz"]

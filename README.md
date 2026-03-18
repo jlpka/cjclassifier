@@ -1,7 +1,8 @@
 # CJClassifier
 
-A focused, self-contained Java library for distinguishing between **Japanese**,
-**Chinese Simplified**, and **Chinese Traditional** text.
+A focused, self-contained library for distinguishing between **Japanese**,
+**Chinese Simplified**, and **Chinese Traditional** text. Available for both
+**Java** and **Python**.
 
 ## The problem
 
@@ -33,21 +34,83 @@ the text (in typical long-form Japanese text, Hiragana is closer to 50% of the c
 
 - **Three-way CJK classification**: Chinese Simplified, Chinese Traditional, and
   Japanese — including all-Kanji Japanese text
-- **No external runtime dependencies**: the core library is a single JAR with
-  zero transitive dependencies (Java 11+)
-- **Bundled model**: a pre-trained model (~7 MB compressed, ~36 MB in memory) is
-  included in the JAR — no separate download required
-- **Thread-safe**: the classifier is immutable; concurrent threads can classify
-  simultaneously using their own `Results` instances
+- **No external runtime dependencies**: the Java library is a single JAR (Java 11+);
+  the Python package is pure Python (3.8+) with no third-party dependencies
+- **Bundled model**: a pre-trained model (~7 MB compressed) is included — no
+  separate download required
 - **Fast**: classification is a single pass over the input with array lookups — no
-  regex, no tokenization, no heap allocation in the hot path
-- **Incremental API**: feed text in chunks via `addText()` and compute the result
-  once at the end
+  regex, no tokenization
+- **Incremental API**: feed text in chunks and compute the result once at the end
 - **Boosts**: optionally bias toward a language when you have a regional hint
-- **Scaledown**: if memory is at a premium, it is possible to scale down the memory
-  footprint to a few MB (cjlogprob param)
 
-## Quick start
+## Quick start — Python
+
+### Install
+
+```bash
+pip install cjclassifier
+```
+
+### Usage
+
+```python
+from cjclassifier import CJClassifier, CJLanguage
+
+cjc = CJClassifier.load()
+
+cjc.detect("今天天气很好，我们去公园散步")   # => CJLanguage.CHINESE_SIMPLIFIED
+cjc.detect("今天天氣很好，我們去公園散步")   # => CJLanguage.CHINESE_TRADITIONAL
+cjc.detect("事務所")                         # => CJLanguage.JAPANESE  (all Kanji)
+cjc.detect("ひらがなとカタカナと")           # => CJLanguage.JAPANESE  (all kana)
+cjc.detect("hello")                          # => CJLanguage.UNKNOWN
+```
+
+### Detailed results
+
+```python
+from cjclassifier.classifier import Results
+
+results = Results()
+cjc.detect("今天天气很好", results)
+
+results.result             # CJLanguage.CHINESE_SIMPLIFIED
+results.gap                # confidence gap: 0 = dead heat, 1 = no contest
+results.total_scores       # per-language log-probability totals
+results.to_short_string()  # e.g. "zh-hans:1.00,zh-hant:0.97,ja:0.85"
+```
+
+### Incremental classification
+
+```python
+from cjclassifier.classifier import Results
+
+results = Results()
+cjc.add_text(chunk1, results.scores)
+cjc.add_text(chunk2, results.scores)
+cjc.compute_result(results)
+# results.result is now available
+```
+
+### Boosts
+
+When you have a hint about the source region (e.g. content is from a
+Hong Kong website), you can slightly favor one language. Boosts range from 0
+(no effect) to 1.0 (heavy). A value around 0.05 is reasonable for nudging
+traditional vs simplified Chinese:
+
+```python
+from cjclassifier.classifier import Results
+
+results = Results()
+cjc.add_text(text, results.scores)
+results.boosts[CJLanguage.CHINESE_TRADITIONAL] = 0.05
+cjc.compute_result(results)
+```
+
+Note: `detect()` calls `clear()` internally, so boosts must be set when using
+the lower-level `add_text()` / `compute_result()` API.
+
+## Quick start — Java
 
 ### Maven
 
@@ -89,9 +152,6 @@ results.toShortString();  // e.g. "zh-hans:1.00,zh-hant:0.97,ja:0.85"
 
 ### Incremental classification
 
-If text arrives in chunks, accumulate scores incrementally and compute the result
-at the end:
-
 ```java
 CJClassifier.Results results = new CJClassifier.Results();
 cjc.addText(chunk1, results.scores);
@@ -101,11 +161,6 @@ cjc.computeResult(results);
 ```
 
 ### Boosts
-
-When you have a hint about the source region (e.g. content is from a
-Hong Kong website), you can slightly favor one language. Boosts range from 0
-(no effect) to 1.0 (heavy). A value around 0.05 is reasonable for nudging
-traditional vs simplified Chinese:
 
 ```java
 CJClassifier.Results results = new CJClassifier.Results();
@@ -124,20 +179,23 @@ the lower-level `addText()` / `computeResult()` API.
 
 ```
 cjclassifier/
-├── core/           cjclassifier – the library JAR (no external dependencies)
-└── tools/          cjclassifier-tools – offline model-building utilities
+├── core/           Java library JAR (no external dependencies)
+├── python/         Python package (pure Python, no external dependencies)
+└── tools/          Java model-building utilities
 ```
 
-The **core** module is all you need as a consumer. It contains the classifier and
-a bundled pre-trained model.
+The **core** module (Java) and/or the **python** directory are all you need as a
+consumer. Both contain the classifier and a bundled pre-trained model.
 
-The **tools** module contains the utilities (`ModelBuilder`, `EvalTool`,
+The **tools** module contains Java utilities (`ModelBuilder`, `EvalTool`,
 `ContentUtils`) that were used to generate the statistical model from Wikipedia
 dumps. You do not need this module to use the library. The tools module has
 additional dependencies (commons-compress, opencc4j) and produces a shaded
 uber-JAR for CLI usage.
 
 ## Building from source
+
+### Java
 
 ```bash
 mvn clean package
@@ -148,13 +206,17 @@ This produces:
 - `core/target/cjclassifier-1.0.2.jar` — the library (≈ 8 MB, includes bundled model)
 - `tools/target/cjclassifier-tools-1.0.2.jar` — uber-JAR for offline tooling
 
-To run tests:
+Requires Java 11+.
+
+### Python
 
 ```bash
-mvn test
+cd python
+make install-dev   # copies model from core/ and installs in editable mode
+make test          # run tests
 ```
 
-Requires Java 11+.
+Requires Python 3.8+.
 
 ## Contributing
 
@@ -164,7 +226,8 @@ Contributions are welcome! Please open an issue or pull request at
 Before submitting a PR, make sure all tests pass:
 
 ```bash
-mvn test
+mvn test              # Java
+cd python && make test  # Python
 ```
 
 ## License
