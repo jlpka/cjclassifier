@@ -1,0 +1,22 @@
+[package]
+name = "cjclassifier-eval"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+cjclassifier = { path = "../cjclassifier" }
+clap = { version = "4", features = ["derive"] }
+libc = "0.2"
+
+[[bin]]
+name = "adhoc"
+path = "src/adhoc.rs"
+
+[[bin]]
+name = "phrase_eval"
+path = "src/phrase_eval.rs"
+
+[[bin]]
+name = "load_speed"
+path = "src/load_speed.rs"

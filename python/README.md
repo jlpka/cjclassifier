@@ -42,6 +42,37 @@ results.total_scores       # per-language log-probability totals
 results.to_short_string()  # e.g. "zh-hans:1.00,zh-hant:0.97,ja:0.85"
 ```
 
+## Incremental classification
+
+```python
+from cjclassifier.classifier import Results
+
+results = Results()
+cjc.add_text(chunk1, results.scores)
+cjc.add_text(chunk2, results.scores)
+cjc.compute_result(results)
+# results.result is now available
+```
+
+## Boosts
+
+When you have a hint about the source region (e.g. content is from a
+Hong Kong website), you can slightly favor one language. Boosts range from 0
+(no effect) to 1.0 (heavy). A value around 0.05 is reasonable for nudging
+traditional vs simplified Chinese:
+
+```python
+from cjclassifier.classifier import Results
+
+results = Results()
+cjc.add_text(text, results.scores)
+results.boosts[CJLanguage.CHINESE_TRADITIONAL] = 0.05
+cjc.compute_result(results)
+```
+
+Note: `detect()` calls `clear()` internally, so boosts must be set when using
+the lower-level `add_text()` / `compute_result()` API.
+
 ## How it works
 
 CJClassifier uses a **unigram + bigram statistical model** trained on the

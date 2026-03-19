@@ -1,8 +1,10 @@
 # CJClassifier
 
 A focused, self-contained library for distinguishing between **Japanese**,
-**Chinese Simplified**, and **Chinese Traditional** text. Available for both
-**Java** and **Python**.
+**Chinese Simplified**, and **Chinese Traditional** text. The primary
+implementation and model-building tools are in **Java**, with **Python** and
+**Rust** implementations also included. The Rust library also provides a
+**C/C++ FFI** interface.
 
 ## The problem
 
@@ -35,80 +37,14 @@ the text (in typical long-form Japanese text, Hiragana is closer to 50% of the c
 - **Three-way CJK classification**: Chinese Simplified, Chinese Traditional, and
   Japanese — including all-Kanji Japanese text
 - **No external runtime dependencies**: the Java library is a single JAR (Java 11+);
-  the Python package is pure Python (3.8+) with no third-party dependencies
+  the Python package is pure Python (3.8+) with no third-party dependencies;
+  the Rust crate depends only on `flate2` for gzip decompression
 - **Bundled model**: a pre-trained model (~7 MB compressed) is included — no
   separate download required
 - **Fast**: classification is a single pass over the input with array lookups — no
   regex, no tokenization
 - **Incremental API**: feed text in chunks and compute the result once at the end
 - **Boosts**: optionally bias toward a language when you have a regional hint
-
-## Quick start — Python
-
-### Install
-
-```bash
-pip install cjclassifier
-```
-
-### Usage
-
-```python
-from cjclassifier import CJClassifier, CJLanguage
-
-cjc = CJClassifier.load()
-
-cjc.detect("今天天气很好，我们去公园散步")   # => CJLanguage.CHINESE_SIMPLIFIED
-cjc.detect("今天天氣很好，我們去公園散步")   # => CJLanguage.CHINESE_TRADITIONAL
-cjc.detect("事務所")                         # => CJLanguage.JAPANESE  (all Kanji)
-cjc.detect("ひらがなとカタカナと")           # => CJLanguage.JAPANESE  (all kana)
-cjc.detect("hello")                          # => CJLanguage.UNKNOWN
-```
-
-### Detailed results
-
-```python
-from cjclassifier.classifier import Results
-
-results = Results()
-cjc.detect("今天天气很好", results)
-
-results.result             # CJLanguage.CHINESE_SIMPLIFIED
-results.gap                # confidence gap: 0 = dead heat, 1 = no contest
-results.total_scores       # per-language log-probability totals
-results.to_short_string()  # e.g. "zh-hans:1.00,zh-hant:0.97,ja:0.85"
-```
-
-### Incremental classification
-
-```python
-from cjclassifier.classifier import Results
-
-results = Results()
-cjc.add_text(chunk1, results.scores)
-cjc.add_text(chunk2, results.scores)
-cjc.compute_result(results)
-# results.result is now available
-```
-
-### Boosts
-
-When you have a hint about the source region (e.g. content is from a
-Hong Kong website), you can slightly favor one language. Boosts range from 0
-(no effect) to 1.0 (heavy). A value around 0.05 is reasonable for nudging
-traditional vs simplified Chinese:
-
-```python
-from cjclassifier.classifier import Results
-
-results = Results()
-cjc.add_text(text, results.scores)
-results.boosts[CJLanguage.CHINESE_TRADITIONAL] = 0.05
-cjc.compute_result(results)
-```
-
-Note: `detect()` calls `clear()` internally, so boosts must be set when using
-the lower-level `add_text()` / `compute_result()` API.
 
 ## Quick start — Java
 
@@ -175,17 +111,65 @@ cjc.computeResult(results);
 Note: `detect()` calls `clear()` internally, so boosts must be set when using
 the lower-level `addText()` / `computeResult()` API.
 
+## Quick start — Python
+
+### Install
+
+```bash
+pip install cjclassifier
+```
+
+### Usage
+
+```python
+from cjclassifier import CJClassifier, CJLanguage
+
+cjc = CJClassifier.load()
+
+cjc.detect("今天天气很好，我们去公园散步")   # => CJLanguage.CHINESE_SIMPLIFIED
+cjc.detect("今天天氣很好，我們去公園散步")   # => CJLanguage.CHINESE_TRADITIONAL
+cjc.detect("事務所")                         # => CJLanguage.JAPANESE  (all Kanji)
+cjc.detect("ひらがなとカタカナと")           # => CJLanguage.JAPANESE  (all kana)
+cjc.detect("hello")                          # => CJLanguage.UNKNOWN
+```
+
+### Detailed results
+
+```python
+from cjclassifier.classifier import Results
+
+results = Results()
+cjc.detect("今天天气很好", results)
+
+results.result             # CJLanguage.CHINESE_SIMPLIFIED
+results.gap                # confidence gap: 0 = dead heat, 1 = no contest
+results.total_scores       # per-language log-probability totals
+results.to_short_string()  # e.g. "zh-hans:1.00,zh-hant:0.97,ja:0.85"
+```
+
+## Quick start — Rust / C / C++
+
+A Rust crate is available with the same functionality, and also builds as a
+C-compatible shared or static library for use from C/C++.
+
+See [`rust/cjclassifier/README.md`](rust/cjclassifier/README.md) for Rust API
+usage, detailed results, and C/C++ FFI documentation.
+
 ## Project structure
 
 ```
 cjclassifier/
-├── core/           Java library JAR (no external dependencies)
-├── python/         Python package (pure Python, no external dependencies)
-└── tools/          Java model-building utilities
+├── core/                  Java library JAR (no external dependencies)
+├── python/                Python package (pure Python, no external dependencies)
+├── rust/cjclassifier/     Rust crate (also builds as C/C++ shared/static library)
+├── rust/eval/             Rust evaluation and benchmarking tools
+└── tools/                 Java model-building utilities
 ```
 
-The **core** module (Java) and/or the **python** directory are all you need as a
-consumer. Both contain the classifier and a bundled pre-trained model.
+The **core** module (Java), the **python** directory, and/or the **rust/cjclassifier**
+crate are all you need as a consumer. Each contains the classifier and a bundled
+pre-trained model. The Rust crate also builds as a C-compatible shared or static
+library — see `rust/eval/src/usingffi.cpp` for a working C++ example.
 
 The **tools** module contains Java utilities (`ModelBuilder`, `EvalTool`,
 `ContentUtils`) that were used to generate the statistical model from Wikipedia
@@ -218,6 +202,16 @@ make test          # run tests
 
 Requires Python 3.8+.
 
+### Rust
+
+```bash
+cd rust/cjclassifier
+cargo build --release
+cargo test
+```
+
+See `rust/cjclassifier/README.md` for API documentation and FFI usage.
+
 ## Contributing
 
 Contributions are welcome! Please open an issue or pull request at
@@ -226,8 +220,9 @@ Contributions are welcome! Please open an issue or pull request at
 Before submitting a PR, make sure all tests pass:
 
 ```bash
-mvn test              # Java
-cd python && make test  # Python
+mvn test                              # Java
+cd python && make test                # Python
+cd rust/cjclassifier && cargo test    # Rust
 ```
 
 ## License

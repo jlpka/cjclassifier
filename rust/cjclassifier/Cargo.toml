@@ -1,0 +1,21 @@
+[package]
+name = "cjclassifier"
+version = "0.1.0"
+edition = "2021"
+description = "Classify ideograph text as Chinese Simplified, Chinese Traditional, or Japanese using a statistical model"
+license = "Apache-2.0"
+authors = ["Jeremy Lilley <jeremy@jlilley.net>"]
+keywords = ["cjk", "chinese", "japanese", "language-detection", "nlp"]
+categories = ["text-processing", "internationalization"]
+repository = "https://github.com/jlpka/cjclassifier"
+homepage = "https://github.com/jlpka/cjclassifier"
+readme = "README.md"
+
+[lib]
+crate-type = ["lib", "cdylib", "staticlib"]
+
+[dependencies]
+flate2 = "1"
+
+[dev-dependencies]
+tempfile = "3"
