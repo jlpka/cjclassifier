@@ -22,4 +22,4 @@ from cjclassifier.classifier import CJClassifier
 from cjclassifier.language import CJLanguage
 
 __all__ = ["CJClassifier", "CJLanguage"]
-__version__ = "1.0.3"
+__version__ = "1.0.5"

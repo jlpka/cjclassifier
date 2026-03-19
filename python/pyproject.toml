@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "cjclassifier"
-version = "1.0.3"
+version = "1.0.5"
 description = "Classify text as Chinese Simplified, Chinese Traditional, or Japanese using a statistical model."
 readme = "README.md"
 license = "Apache-2.0"

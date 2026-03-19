@@ -288,7 +288,7 @@ class Results:
         return ",".join(parts)
 
     def __repr__(self) -> str:
-        code = self.result.iso_code if self.result else "None"
+        code = self.result.iso_code if self.result is not None else "None"
         parts = [f"Results(result={code}"]
         if self.scores.kana_count > 0:
             total = self.scores.kana_count + self.scores.cj_char_count
